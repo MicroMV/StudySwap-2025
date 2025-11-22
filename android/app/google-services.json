@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "405928119803",
+    "project_id": "studyswap-e65a6",
+    "storage_bucket": "studyswap-e65a6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:405928119803:android:b26a289eedf302e2e60f5e",
+        "android_client_info": {
+          "package_name": "com.example.studyswap"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "405928119803-o9atmkh87gnhievubla9rg5i38cm9tsi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.studyswap",
+            "certificate_hash": "2246c952c7a5381da719f811a0a2ea64d65699cc"
+          }
+        },
+        {
+          "client_id": "405928119803-p9pv786i07gtfp7cap0o0s2n1qg26u3o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRXkwLSx9th8GVFez5S4qFNGvV93-FtUE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "405928119803-p9pv786i07gtfp7cap0o0s2n1qg26u3o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
