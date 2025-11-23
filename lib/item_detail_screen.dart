@@ -1745,7 +1745,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               children: [
                 RichText(
                   text: TextSpan(
-                    style: const TextStyle(fontSize: 16, color: Colors.black87),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                    ),
                     children: [
                       TextSpan(
                         text:

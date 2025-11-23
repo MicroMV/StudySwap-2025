@@ -11,6 +11,7 @@ import 'dart:io';
 import 'chatsupport.dart';
 import 'privacy_policy.dart';
 import 'setting_screen.dart';
+import '../services/presence_service.dart';
 
 class ShimmerWidget extends StatefulWidget {
   final Widget child;
@@ -972,6 +973,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           // If user confirmed, proceed with logout
                           if (shouldLogout == true && mounted) {
                             try {
+                              // Set presence offline before signing out
+                              await PresenceService.setOffline();
                               // Sign out from Firebase
                               await FirebaseAuth.instance.signOut();
 

@@ -10,8 +10,10 @@ import 'item_detail_screen.dart';
 import 'package:flutter/services.dart';
 import 'notifications_screen.dart';
 import '../services/notification_service.dart';
+import '../services/presence_service.dart';
 import 'main_screen.dart';
 import 'package:carousel_slider/carousel_slider.dart' as carousel;
+import 'login.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -1220,15 +1222,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _handleLogout(BuildContext context) async {
-    Navigator.pop(context);
+    Navigator.pop(context); // Close the confirmation dialog
 
     try {
-      // Sign out from Firebase
-      await FirebaseAuth.instance.signOut();
+      // Set presence offline and sign out (don't await, let them happen in background)
+      PresenceService.setOffline();
+      FirebaseAuth.instance.signOut();
 
-      // Navigate directly to login and clear all routes
+      // Navigate immediately to login and clear all routes
       if (context.mounted) {
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
       }
     } catch (e) {
       if (context.mounted) {

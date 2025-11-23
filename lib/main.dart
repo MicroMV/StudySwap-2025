@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'login.dart';
@@ -18,7 +19,6 @@ void main() async {
   await NotificationService.initialize();
   await NotificationService.initializeLocalNotifications();
   DeadlineCheckerService.checkDeadlinesOnStartup();
-
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
@@ -31,24 +31,41 @@ class StudySwapApp extends StatefulWidget {
   const StudySwapApp({super.key});
 
   @override
-  State<StudySwapApp> createState() => _StudySwapAppState();
+  State createState() => _StudySwapAppState();
 }
 
-class _StudySwapAppState extends State<StudySwapApp> {
+class _StudySwapAppState extends State<StudySwapApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     PresenceService.setOnline();
+  }
+
+  @override
+  void dispose() {
+    PresenceService.setOffline();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      PresenceService.setOffline();
+    } else if (state == AppLifecycleState.resumed) {
+      PresenceService.setOnline();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-
     return MaterialApp(
       title: 'StudySwap',
       debugShowCheckedModeBanner: false,
-
       // Light theme
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -72,7 +89,6 @@ class _StudySwapAppState extends State<StudySwapApp> {
               surfaceContainerLowest: Colors.white,
             ),
       ),
-
       // Dark theme
       darkTheme: ThemeData(
         primarySwatch: Colors.blue,
@@ -96,10 +112,8 @@ class _StudySwapAppState extends State<StudySwapApp> {
               surfaceContainerLowest: Colors.grey[900],
             ),
       ),
-
       themeMode: themeProvider.themeMode,
-
-      home: StreamBuilder<User?>(
+      home: StreamBuilder(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -120,13 +134,43 @@ class _StudySwapAppState extends State<StudySwapApp> {
           if (snapshot.hasData) {
             NotificationService.updateFCMToken();
             PresenceService.setOnline();
-            return const MainScreen();
+
+            // Check if profile is complete before deciding where to go
+            return FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(snapshot.data!.uid)
+                  .get(),
+              builder: (context, userSnapshot) {
+                if (userSnapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                if (userSnapshot.hasError || !userSnapshot.hasData) {
+                  return const MainScreen();
+                }
+
+                final userData =
+                    userSnapshot.data?.data() as Map<String, dynamic>?;
+                final profileCompleted = userData?['profileCompleted'] ?? false;
+                final school = userData?['school']?.toString().trim() ?? '';
+
+                // If profile is incomplete or school is missing, show complete profile screen
+                if (!profileCompleted || school.isEmpty) {
+                  return const CompleteProfileScreen();
+                }
+
+                // Profile is complete, show main screen
+                return const MainScreen();
+              },
+            );
           } else {
             return const LoginScreen();
           }
         },
       ),
-
       routes: {
         '/home': (context) => const MainScreen(),
         '/login': (context) => const LoginScreen(),
