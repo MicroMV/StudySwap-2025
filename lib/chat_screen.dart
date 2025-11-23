@@ -1647,7 +1647,93 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _showDeleteConfirmationDialog() {
+  void _showDeleteConfirmationDialog() async {
+    // Check if there's a pending transaction
+    try {
+      final conversationDoc = await FirebaseFirestore.instance
+          .collection('conversations')
+          .doc(widget.conversationId)
+          .get();
+
+      if (conversationDoc.exists) {
+        final conversationData = conversationDoc.data() as Map<String, dynamic>;
+        final activeRequest =
+            conversationData['activeRequest'] as Map<String, dynamic>?;
+
+        if (activeRequest != null) {
+          final status = activeRequest['status'] ?? 'none';
+          final itemType = activeRequest['itemType'] ?? '';
+
+          // Block deletion if status is pending
+          if (status == 'pending') {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.warning, color: Colors.white),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Cannot delete conversation with pending request.',
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 3),
+              ),
+            );
+            return;
+          }
+
+          // For BORROW items - check if borrowStatus is completed
+          if (itemType.toLowerCase() == 'borrow' && status == 'accepted') {
+            // Check item's borrowStatus
+            final itemId = activeRequest['itemId'];
+            if (itemId != null) {
+              final itemDoc = await FirebaseFirestore.instance
+                  .collection('items')
+                  .doc(itemId)
+                  .get();
+
+              if (itemDoc.exists) {
+                final itemData = itemDoc.data() as Map<String, dynamic>;
+                final borrowStatus = (itemData['borrowStatus'] ?? '')
+                    .toString()
+                    .toLowerCase();
+
+                if (borrowStatus != 'completed') {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(Icons.warning, color: Colors.white),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Cannot delete active borrow. Wait until item is returned.',
+                            ),
+                          ),
+                        ],
+                      ),
+                      backgroundColor: Colors.orange,
+                      duration: Duration(seconds: 4),
+                    ),
+                  );
+                  return;
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('Error checking conversation status: $e');
+    }
+
+    // Show confirmation dialog if all checks pass
     showDialog(
       context: context,
       builder: (BuildContext context) {

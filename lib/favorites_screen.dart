@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import '../models/offer_item.dart';
 import 'item_detail_screen.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -82,218 +83,252 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     Color actionColor = _getActionColor(itemAction);
     Color categoryColor = _getCategoryColor(itemCategory);
 
-    return StreamBuilder<QuerySnapshot>(
-      stream: _firestore
-          .collection('transactions')
-          .where('itemId', isEqualTo: itemId)
-          .where('status', isEqualTo: 'accepted')
-          .limit(1)
-          .snapshots(),
-      builder: (context, transactionSnapshot) {
-        final isActive =
-            !transactionSnapshot.hasData ||
-            (transactionSnapshot.data?.docs.isEmpty ?? true);
+    return StreamBuilder<DocumentSnapshot>(
+      stream: _firestore.collection('items').doc(itemId).snapshots(),
+      builder: (context, itemSnapshot) {
+        bool isActive = true;
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.black.withOpacity(0.3)
-                    : Colors.grey.withOpacity(0.1),
-                spreadRadius: 1,
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () {
-              if (!isActive) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Row(
-                      children: [
-                        Icon(Icons.info_outline, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text('This item is no longer available'),
-                      ],
-                    ),
-                    backgroundColor: Colors.orange,
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              } else {
-                _navigateToItemDetail(favorite);
+        if (itemSnapshot.hasData && itemSnapshot.data != null) {
+          final itemData = itemSnapshot.data!.data() as Map<String, dynamic>?;
+
+          if (itemData != null) {
+            final action = (itemData['action'] ?? '').toString().toLowerCase();
+            final itemIsActive = itemData['isActive'] ?? true;
+
+            // For BORROW items - check borrowStatus
+            if (action == 'borrow') {
+              final borrowStatus = (itemData['borrowStatus'] ?? '')
+                  .toString()
+                  .toLowerCase();
+              if (borrowStatus == 'completed') {
+                isActive = false;
               }
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            }
+            // For SELL and SWAP - check isActive
+            else {
+              if (!itemIsActive) {
+                isActive = false;
+              }
+            }
+          }
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Slidable(
+            key: Key('${favorite['itemId']}_${favorite['userId']}'),
+            endActionPane: ActionPane(
+              motion: const DrawerMotion(),
+              extentRatio: 0.25,
+              children: [
+                SlidableAction(
+                  onPressed: (context) => _removeFromFavorites(favorite),
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  icon: Icons.delete,
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+                ),
+              ],
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isActive
+                    ? Theme.of(context).cardColor
+                    : Theme.of(context).cardColor.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.black.withOpacity(0.3)
+                        : Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Stack(
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: categoryColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: categoryColor.withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: itemImages.isNotEmpty
-                              ? _buildItemImage(itemImages[0], itemCategory)
-                              : Icon(
-                                  _getCategoryIcon(itemCategory),
-                                  color: categoryColor,
-                                  size: 30,
-                                ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
+                  InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: isActive
+                        ? () => _navigateToItemDetail(favorite)
+                        : null,
+                    child: Opacity(
+                      opacity: isActive ? 1.0 : 0.5,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              itemTitle,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'by $itemUserName',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Theme.of(
-                                  context,
-                                ).textTheme.bodyMedium?.color?.withOpacity(0.7),
-                              ),
-                            ),
-                            if (itemPrice.isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                itemPrice,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: itemAction == 'Sell'
-                                      ? Colors.green
-                                      : actionColor,
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: 6),
                             Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildDetailChip(
-                                  Icons.star_rate,
-                                  itemCondition,
-                                  _getConditionColor(itemCondition),
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: categoryColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: categoryColor.withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: itemImages.isNotEmpty
+                                        ? _buildItemImage(
+                                            itemImages[0],
+                                            itemCategory,
+                                          )
+                                        : Icon(
+                                            _getCategoryIcon(itemCategory),
+                                            color: categoryColor,
+                                            size: 30,
+                                          ),
+                                  ),
                                 ),
-                                const SizedBox(width: 6),
-                                _buildDetailChip(
-                                  Icons.location_on,
-                                  itemDistance,
-                                  Colors.blue,
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        itemTitle,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'by $itemUserName',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.color
+                                              ?.withOpacity(0.7),
+                                        ),
+                                      ),
+                                      if (itemPrice.isNotEmpty) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          itemPrice,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: itemAction == 'Sell'
+                                                ? Colors.green
+                                                : actionColor,
+                                          ),
+                                        ),
+                                      ],
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        children: [
+                                          _buildDetailChip(
+                                            Icons.star_rate,
+                                            itemCondition,
+                                            _getConditionColor(itemCondition),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          _buildDetailChip(
+                                            Icons.location_on,
+                                            itemDistance,
+                                            Colors.blue,
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.favorite,
+                                        color: Colors.red,
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      onPressed: () =>
+                                          _removeFromFavorites(favorite),
+                                    ),
+                                    const SizedBox(height: 40),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: actionColor,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        itemAction,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
+                            if (addedAt != null) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'Added ${_formatTimestamp(addedAt.toDate())}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.color
+                                      ?.withOpacity(0.6),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.favorite, color: Colors.red),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: () => _removeFromFavorites(favorite),
-                          ),
-                          const SizedBox(height: 40),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: actionColor,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              itemAction,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
-                  if (!isActive) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            size: 12,
-                            color: Colors.red[700],
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Unavailable',
+                  // Simple UNAVAILABLE overlay
+                  if (!isActive)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.75),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'UNAVAILABLE',
                             style: TextStyle(
-                              color: Colors.red[700],
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ],
-                  if (addedAt != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      'Added ${_formatTimestamp(addedAt.toDate())}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.color?.withOpacity(0.6),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -320,7 +355,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           ),
         );
       } catch (e) {
-        print('Error decoding base64 image: $e');
         return Icon(
           _getCategoryIcon(category),
           color: _getCategoryColor(category),
@@ -446,6 +480,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     final favoriteId = '${currentUserId}_$itemId';
     try {
       await _firestore.collection('favorites').doc(favoriteId).delete();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Row(
@@ -460,6 +495,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error removing favorite: $e'),
