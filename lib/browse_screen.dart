@@ -318,7 +318,33 @@ class _BrowseScreenState extends State<BrowseScreen> {
         }
 
         final offers = snapshot.data ?? [];
-        if (offers.isEmpty) {
+
+        // Filter out completed items
+        final filteredOffers = offers.where((offer) {
+          final status = offer.status.toLowerCase();
+
+          // Check if the main status indicates completion
+          if (status == 'borrowed' ||
+              status == 'sold' ||
+              status == 'swapped' ||
+              status == 'completed') {
+            return false;
+          }
+
+          // Check if isActive is false
+          if (offer.isActive == false) {
+            return false;
+          }
+
+          // Check action-specific status fields
+          if (offer.borrowStatus?.toLowerCase() == 'completed') return false;
+          if (offer.sellStatus?.toLowerCase() == 'completed') return false;
+          if (offer.swapStatus?.toLowerCase() == 'completed') return false;
+
+          return true;
+        }).toList();
+
+        if (filteredOffers.isEmpty) {
           return Container(
             padding: const EdgeInsets.all(32),
             child: Center(
@@ -378,9 +404,9 @@ class _BrowseScreenState extends State<BrowseScreen> {
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
           ),
-          itemCount: offers.length,
+          itemCount: filteredOffers.length,
           itemBuilder: (context, index) {
-            final offer = offers[index];
+            final offer = filteredOffers[index];
             return _buildGridOfferCard(context, offer);
           },
         );

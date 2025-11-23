@@ -332,10 +332,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final allOffers = snapshot.data ?? [];
 
-        // FILTER CLIENT-SIDE instead of reloading from database
+        // Filter out completed items first
+        final activeOffers = allOffers.where((offer) {
+          final status = offer.status.toLowerCase();
+
+          // Check if the main status indicates completion
+          if (status == 'borrowed' ||
+              status == 'sold' ||
+              status == 'swapped' ||
+              status == 'completed') {
+            return false;
+          }
+
+          // Check if isActive is false
+          if (offer.isActive == false) {
+            return false;
+          }
+
+          // Check action-specific status fields
+          if (offer.borrowStatus?.toLowerCase() == 'completed') return false;
+          if (offer.sellStatus?.toLowerCase() == 'completed') return false;
+          if (offer.swapStatus?.toLowerCase() == 'completed') return false;
+
+          return true;
+        }).toList();
+
+        // Then apply action filter
         final filteredOffers = _selectedFilter == 'All'
-            ? allOffers
-            : allOffers
+            ? activeOffers
+            : activeOffers
                   .where((offer) => offer.action == _selectedFilter)
                   .toList();
 
