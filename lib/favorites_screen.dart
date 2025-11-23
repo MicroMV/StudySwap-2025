@@ -25,7 +25,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       appBar: AppBar(
         title: Text(
           'My Favorites',
-          style: TextStyle(color: Theme.of(context).appBarTheme.foregroundColor, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: Theme.of(context).appBarTheme.foregroundColor,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
@@ -47,7 +50,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           }
 
           final favorites = snapshot.data?.docs ?? [];
-
           if (favorites.isEmpty) {
             return _buildEmptyWidget();
           }
@@ -99,7 +101,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).brightness == Brightness.dark ? Colors.black.withOpacity(0.3) : Colors.grey.withOpacity(0.1),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.black.withOpacity(0.3)
+                    : Colors.grey.withOpacity(0.1),
                 spreadRadius: 1,
                 blurRadius: 4,
                 offset: const Offset(0, 2),
@@ -133,6 +137,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
                         width: 60,
@@ -161,45 +166,23 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    itemTitle,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: actionColor,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    itemAction,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            Text(
+                              itemTitle,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'by $itemUserName',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                                color: Theme.of(
+                                  context,
+                                ).textTheme.bodyMedium?.color?.withOpacity(0.7),
                               ),
                             ),
                             if (itemPrice.isNotEmpty) ...[
@@ -215,41 +198,79 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                 ),
                               ),
                             ],
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                _buildDetailChip(
+                                  Icons.star_rate,
+                                  itemCondition,
+                                  _getConditionColor(itemCondition),
+                                ),
+                                const SizedBox(width: 6),
+                                _buildDetailChip(
+                                  Icons.location_on,
+                                  itemDistance,
+                                  Colors.blue,
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.favorite, color: Colors.red),
-                        onPressed: () => _removeFromFavorites(favorite),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.favorite, color: Colors.red),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () => _removeFromFavorites(favorite),
+                          ),
+                          const SizedBox(height: 40),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: actionColor,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              itemAction,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _buildDetailChip(
-                        Icons.star_rate,
-                        itemCondition,
-                        _getConditionColor(itemCondition),
+                  if (!isActive) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
                       ),
-                      const SizedBox(width: 8),
-                      _buildDetailChip(
-                        Icons.location_on,
-                        itemDistance,
-                        Colors.blue,
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      const Spacer(),
-                      if (!isActive)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 12,
+                            color: Colors.red[700],
                           ),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
+                          const SizedBox(width: 4),
+                          Text(
                             'Unavailable',
                             style: TextStyle(
                               color: Colors.red[700],
@@ -257,14 +278,20 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ),
-                    ],
-                  ),
+                        ],
+                      ),
+                    ),
+                  ],
                   if (addedAt != null) ...[
                     const SizedBox(height: 8),
                     Text(
                       'Added ${_formatTimestamp(addedAt.toDate())}',
-                      style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6)),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                      ),
                     ),
                   ],
                 ],
@@ -301,7 +328,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         );
       }
     }
-
     return Image.network(
       imageUrl,
       fit: BoxFit.cover,
@@ -334,21 +360,21 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   Widget _buildDetailChip(IconData icon, String label, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
+          Icon(icon, size: 10, color: color),
+          const SizedBox(width: 3),
           Text(
             label,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 9,
               color: color,
               fontWeight: FontWeight.w500,
             ),
@@ -363,21 +389,34 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.favorite_border, size: 80, color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[600] : Colors.grey[400]),
+          Icon(
+            Icons.favorite_border,
+            size: 80,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.grey[600]
+                : Colors.grey[400],
+          ),
           const SizedBox(height: 16),
           Text(
             'No favorites yet',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+              color: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.color?.withOpacity(0.7),
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Tap the heart icon on items you love\nto add them to your favorites',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6)),
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+            ),
           ),
         ],
       ),
@@ -405,7 +444,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   Future<void> _removeFromFavorites(Map<String, dynamic> favorite) async {
     final itemId = favorite['itemId'];
     final favoriteId = '${currentUserId}_$itemId';
-
     try {
       await _firestore.collection('favorites').doc(favoriteId).delete();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -433,7 +471,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   void _navigateToItemDetail(Map<String, dynamic> favorite) {
     final itemImages = List<String>.from(favorite['itemImages'] ?? []);
-
     final offerItem = OfferItem(
       id: favorite['itemId'] ?? '',
       title: favorite['itemTitle'] ?? '',
@@ -466,7 +503,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   String _formatTimestamp(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-
     if (difference.inDays > 7) {
       return DateFormat('MMM d, yyyy').format(dateTime);
     } else if (difference.inDays > 0) {

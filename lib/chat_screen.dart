@@ -2072,7 +2072,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                     const Expanded(
                       child: Text(
                         'This will complete the transaction immediately.',
-                        style: TextStyle(fontSize: 12),
+                        style: TextStyle(fontSize: 12, color: Colors.blue),
                       ),
                     ),
                   ],

@@ -370,204 +370,187 @@ class _BrowseScreenState extends State<BrowseScreen> {
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
+        return GridView.builder(
+          padding: const EdgeInsets.all(12),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.68, // Taller cards
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+          ),
           itemCount: offers.length,
           itemBuilder: (context, index) {
             final offer = offers[index];
-            return _buildOfferCard(context, offer);
+            return _buildGridOfferCard(context, offer);
           },
         );
       },
     );
   }
 
-  Widget _buildOfferCard(BuildContext context, OfferItem offer) {
+  Widget _buildGridOfferCard(BuildContext context, OfferItem offer) {
     Color typeColor = _getActionColor(offer.action);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white.withOpacity(0.05)
-                : Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ItemDetailScreen(initialOffer: offer),
           ),
-        ],
-      ),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ItemDetailScreen(initialOffer: offer),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // Item Image/Icon
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: _getCategoryColor(offer.category).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.grey[800]!
+                : Colors.grey[200]!,
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image section
+            Container(
+              height: 155, // Fixed height slightly smaller
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: _getCategoryColor(offer.category).withOpacity(0.1),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
                 ),
-                child: offer.images.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: _buildImage(offer.images.first, offer.category),
-                      )
-                    : Icon(
+              ),
+              child: offer.images.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(12),
+                      ),
+                      child: _buildImage(offer.images.first, offer.category),
+                    )
+                  : Center(
+                      child: Icon(
                         _getCategoryIcon(offer.category),
                         color: _getCategoryColor(offer.category),
-                        size: 40,
+                        size: 60,
                       ),
-              ),
-              const SizedBox(width: 16),
-              // Item Details
-              Expanded(
+                    ),
+            ),
+            // Content section - reduced spacing
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(8), // Reduced from 10 to 8
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Title
+                    Text(
+                      offer.title,
+                      style: TextStyle(
+                        fontSize: 13, // Slightly smaller
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                        height: 1.1, // Tighter line height
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4), // Reduced from 6 to 4
+                    // Price on its own line
+                    if (offer.price != null && offer.price!.isNotEmpty)
+                      Text(
+                        offer.price!,
+                        style: TextStyle(
+                          fontSize: 15, // Slightly smaller
+                          fontWeight: FontWeight.bold,
+                          color: offer.action == 'Sell'
+                              ? Colors.orange
+                              : typeColor,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    else
+                      Text(
+                        offer.action == 'Borrow' ? 'Free' : 'Trade',
+                        style: TextStyle(
+                          fontSize: 13, // Slightly smaller
+                          fontWeight: FontWeight.bold,
+                          color: typeColor,
+                        ),
+                      ),
+                    const Spacer(),
+                    // Badges and Distance row
                     Row(
                       children: [
-                        Expanded(
-                          child: Text(
-                            offer.title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(
-                                context,
-                              ).textTheme.bodyLarge?.color,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
+                        // Action badge (Borrow/Sell/Swap)
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                            horizontal: 5,
+                            vertical: 2,
                           ),
                           decoration: BoxDecoration(
                             color: typeColor,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(3),
                           ),
                           child: Text(
                             offer.action,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      offer.userName,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.color?.withOpacity(0.8),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 12,
-                          color: Theme.of(
-                            context,
-                          ).iconTheme.color?.withOpacity(0.6),
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          offer.distance,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(
-                              context,
-                            ).textTheme.bodySmall?.color?.withOpacity(0.7),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '• ${offer.category}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(
-                              context,
-                            ).textTheme.bodySmall?.color?.withOpacity(0.7),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
+                        const SizedBox(width: 3),
+                        // Condition badge
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
+                            horizontal: 5,
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
                             color: _getConditionColor(offer.condition),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(3),
                           ),
                           child: Text(
                             offer.condition,
                             style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                           ),
                         ),
                         const Spacer(),
-                        if (offer.price != null && offer.price!.isNotEmpty)
-                          Text(
-                            offer.price!,
+                        // Distance
+                        Icon(
+                          Icons.location_on,
+                          size: 11,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 1),
+                        Flexible(
+                          child: Text(
+                            offer.distance,
                             style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: offer.action == 'Sell'
-                                  ? Colors.green
-                                  : typeColor,
+                              fontSize: 10,
+                              color: Colors.grey[600],
                             ),
-                          )
-                        else
-                          Text(
-                            offer.action == 'Borrow' ? 'Free' : 'Trade',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: typeColor,
-                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
+                        ),
                       ],
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -581,12 +564,12 @@ class _BrowseScreenState extends State<BrowseScreen> {
         return Image.memory(
           bytes,
           fit: BoxFit.cover,
-          width: 80,
-          height: 80,
+          width: double.infinity,
+          height: double.infinity,
           errorBuilder: (context, error, stackTrace) => Icon(
             _getCategoryIcon(category),
             color: _getCategoryColor(category),
-            size: 40,
+            size: 50,
           ),
         );
       } catch (e) {
@@ -594,20 +577,19 @@ class _BrowseScreenState extends State<BrowseScreen> {
         return Icon(
           _getCategoryIcon(category),
           color: _getCategoryColor(category),
-          size: 40,
+          size: 50,
         );
       }
     }
-
     return Image.network(
       imageUrl,
       fit: BoxFit.cover,
-      width: 80,
-      height: 80,
+      width: double.infinity,
+      height: double.infinity,
       errorBuilder: (context, error, stackTrace) => Icon(
         _getCategoryIcon(category),
         color: _getCategoryColor(category),
-        size: 40,
+        size: 50,
       ),
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;

@@ -128,10 +128,6 @@ class _HomeScreenState extends State<HomeScreen> {
               buildBannerCarousel(),
               const SizedBox(height: 20),
 
-              // Action Buttons
-              _buildActionButtons(context),
-              const SizedBox(height: 32),
-
               // Featured Categories
               _buildFeaturedSection(),
               const SizedBox(height: 32),
@@ -594,79 +590,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildActionButton(
-            'Borrow',
-            Colors.green,
-            Icons.library_books,
-            () => navigateToFilteredView(context, 'Borrow'),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildActionButton(
-            'Sell',
-            Colors.orange,
-            Icons.sell,
-            () => navigateToFilteredView(context, 'Sell'),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildActionButton(
-            'Swap',
-            const Color(0xFF4A90E2),
-            Icons.swap_horiz,
-            () => navigateToFilteredView(context, 'Swap'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButton(
-    String title,
-    Color color,
-    IconData icon,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.3),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildFeaturedSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -980,40 +903,79 @@ class _HomeScreenState extends State<HomeScreen> {
                           .doc(offer.userId)
                           .get(),
                       builder: (context, snapshot) {
-                        final userData =
-                            snapshot.data?.data() as Map<String, dynamic>?;
-                        final isLoading =
-                            snapshot.connectionState == ConnectionState.waiting;
-
-                        //  Show shimmer while loading
-                        if (isLoading) {
-                          return ShimmerWidget(
-                            child: CircleAvatar(
-                              radius: 12,
-                              backgroundColor: Colors.grey[300],
+                        // Show placeholder while loading
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircleAvatar(
+                            radius: 12,
+                            backgroundColor: Colors.grey[300],
+                            child: const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                           );
                         }
 
+                        // Handle error or no data
+                        if (snapshot.hasError ||
+                            !snapshot.hasData ||
+                            snapshot.data == null) {
+                          return CircleAvatar(
+                            radius: 12,
+                            backgroundColor: const Color(0xFF4A90E2),
+                            child: Text(
+                              offer.userName.isNotEmpty
+                                  ? offer.userName[0].toUpperCase()
+                                  : 'U',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          );
+                        }
+
+                        final userData =
+                            snapshot.data!.data() as Map<String, dynamic>?;
+
+                        // Try to get profile image
+                        ImageProvider? profileImage;
+                        if (userData != null) {
+                          final base64Image = userData['profileImageBase64'];
+                          if (base64Image != null &&
+                              base64Image is String &&
+                              base64Image.isNotEmpty) {
+                            try {
+                              profileImage = MemoryImage(
+                                base64Decode(base64Image),
+                              );
+                            } catch (e) {
+                              print('Error decoding profile image: $e');
+                            }
+                          }
+                        }
+
                         return CircleAvatar(
                           radius: 12,
-                          backgroundColor: Colors.grey[300],
-                          backgroundImage: _getProfileImage(userData),
-                          child: _getProfileImage(userData) == null
+                          backgroundColor: const Color(0xFF4A90E2),
+                          backgroundImage: profileImage,
+                          child: profileImage == null
                               ? Text(
                                   offer.userName.isNotEmpty
-                                      ? offer.userName[0]
+                                      ? offer.userName[0].toUpperCase()
                                       : 'U',
                                   style: const TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
+                                    color: Colors.white,
                                   ),
                                 )
                               : null,
                         );
                       },
                     ),
-
                     const SizedBox(width: 8),
                     Text(
                       offer.userName,
@@ -1026,6 +988,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
+
                 // Right side - Price (moved here from top right)
                 if (offer.price != null && offer.price!.isNotEmpty)
                   Text(
@@ -1673,15 +1636,17 @@ class _MyOffersScreenState extends State<MyOffersScreen> {
                   Row(
                     children: [
                       Icon(
-                        _getStatusIcon(offer.status),
+                        offer.isActive
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                         size: 16,
-                        color: _getStatusColor(offer.status),
+                        color: offer.isActive ? Colors.green : Colors.grey,
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        _getStatusText(offer.status),
+                        offer.isActive ? 'Active' : 'Inactive',
                         style: TextStyle(
-                          color: _getStatusColor(offer.status),
+                          color: offer.isActive ? Colors.green : Colors.grey,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -2256,7 +2221,14 @@ class _MyOffersScreenState extends State<MyOffersScreen> {
     });
 
     try {
-      await DatabaseService.toggleOfferStatus(offer.id, newStatus);
+      // Update 'items' collection, not 'offers'
+      await FirebaseFirestore.instance
+          .collection('items') // Changed from 'offers' to 'items'
+          .doc(offer.id)
+          .update({
+            'isActive': newStatus,
+            'updatedAt': DateTime.now().toIso8601String(),
+          });
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -2293,6 +2265,7 @@ class _MyOffersScreenState extends State<MyOffersScreen> {
         );
       }
     } catch (e) {
+      print('Error toggling offer status: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2392,62 +2365,6 @@ class _MyOffersScreenState extends State<MyOffersScreen> {
         return Colors.red;
       default:
         return Colors.grey;
-    }
-  }
-
-  // Status helper methods
-  IconData _getStatusIcon(String status) {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return Icons.visibility;
-      case 'borrowed':
-        return Icons.library_books;
-      case 'sold':
-        return Icons.sell;
-      case 'swapped':
-        return Icons.swap_horiz;
-      case 'inactive':
-      case 'unavailable':
-        return Icons.visibility_off;
-      default:
-        return Icons.help_outline;
-    }
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return Colors.green;
-      case 'borrowed':
-        return Colors.blue;
-      case 'sold':
-        return Colors.orange;
-      case 'swapped':
-        return const Color(0xFF4A90E2);
-      case 'inactive':
-      case 'unavailable':
-        return Colors.grey;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  String _getStatusText(String status) {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return 'Active';
-      case 'borrowed':
-        return 'Borrowed';
-      case 'sold':
-        return 'Sold';
-      case 'swapped':
-        return 'Swapped';
-      case 'inactive':
-        return 'Inactive';
-      case 'unavailable':
-        return 'Unavailable';
-      default:
-        return status.capitalize();
     }
   }
 }

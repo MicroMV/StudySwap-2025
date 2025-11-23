@@ -38,7 +38,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               'school': _schoolController.text.trim(),
               'profileCompleted': true,
             });
-
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -50,7 +49,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             ),
           ),
         );
-
         Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       }
     } catch (e) {
@@ -69,17 +67,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     }
   }
 
-  // Show confirmation dialog with proper layout and delete user document
   Future<bool> _onWillPop() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: Theme.of(context).dialogBackgroundColor,
         title: Row(
           children: const [
             Icon(Icons.warning_amber_rounded, color: Colors.orange),
             SizedBox(width: 8),
-            // Wrap Text in Expanded to prevent overflow
             Expanded(
               child: Text(
                 'Complete Your Profile',
@@ -107,25 +104,19 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     );
 
     if (shouldLogout == true) {
-      // Delete incomplete user document before logout
       try {
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
-          // Delete the user document from Firestore
           await FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
               .delete();
-
           print('✅ Deleted incomplete user document for ${user.uid}');
-
-          // Delete the Firebase Auth account
           await user.delete();
           print('✅ Deleted Firebase Auth account');
         }
       } catch (e) {
         print('❌ Error deleting user: $e');
-        // If deletion fails, just sign out
         await FirebaseAuth.instance.signOut();
       }
 
@@ -137,14 +128,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       return true;
     }
 
-    return false; // Don't allow back navigation
+    return false;
   }
 
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Wrap with WillPopScope to intercept back button
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
@@ -173,9 +164,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               Expanded(
                 child: Container(
                   width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.black : Colors.white,
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(30),
                       topRight: Radius.circular(30),
                     ),
@@ -188,12 +179,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'One more step!',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1F2937),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1F2937),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -201,16 +194,17 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           'Please complete your profile to continue',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.grey[600],
+                            color: isDark ? Colors.grey[400] : Colors.grey[600],
                           ),
                         ),
                         const SizedBox(height: 32),
-
                         // User Info Display
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8F9FA),
+                            color: isDark
+                                ? Colors.grey[850]
+                                : const Color(0xFFF8F9FA),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -235,16 +229,21 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                   children: [
                                     Text(
                                       user?.displayName ?? 'User',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.w600,
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black,
                                       ),
                                     ),
                                     Text(
                                       user?.email ?? '',
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: Colors.grey[600],
+                                        color: isDark
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
                                       ),
                                     ),
                                   ],
@@ -254,27 +253,34 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-
                         // School field
-                        const Text(
+                        Text(
                           'School/University',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF1F2937),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1F2937),
                           ),
                         ),
                         const SizedBox(height: 8),
                         Container(
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8F9FA),
+                            color: isDark
+                                ? Colors.grey[850]
+                                : const Color(0xFFF8F9FA),
                             borderRadius: BorderRadius.circular(15),
-                            border: Border.all(color: const Color(0xFFE5E7EB)),
+                            border: Border.all(
+                              color: isDark
+                                  ? Colors.grey[700]!
+                                  : const Color(0xFFE5E7EB),
+                            ),
                           ),
                           child: TextField(
                             controller: _schoolController,
-                            style: const TextStyle(
-                              color: Colors.black87,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black87,
                               fontSize: 16,
                             ),
                             textCapitalization: TextCapitalization.words,
@@ -283,18 +289,24 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                 margin: const EdgeInsets.all(12),
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: isDark
+                                      ? Colors.grey[800]
+                                      : Colors.white,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.school_outlined,
-                                  color: Color(0xFF6B7280),
+                                  color: isDark
+                                      ? Colors.grey[400]
+                                      : const Color(0xFF6B7280),
                                   size: 20,
                                 ),
                               ),
                               hintText: 'e.g., The Lewis College',
-                              hintStyle: const TextStyle(
-                                color: Color(0xFF9CA3AF),
+                              hintStyle: TextStyle(
+                                color: isDark
+                                    ? Colors.grey[600]
+                                    : const Color(0xFF9CA3AF),
                                 fontSize: 16,
                               ),
                               border: InputBorder.none,
@@ -306,7 +318,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: 32),
-
                         // Complete button
                         Container(
                           width: double.infinity,

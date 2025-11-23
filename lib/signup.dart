@@ -37,6 +37,7 @@ class _SignupScreenState extends State<SignupScreen> {
         'createdAt': FieldValue.serverTimestamp(),
         'photoURL': user.photoURL,
         'lastLogin': FieldValue.serverTimestamp(),
+        'profileCompleted': true,
       });
       print('Created user document for ${user.uid}');
     } catch (e) {
