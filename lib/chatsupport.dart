@@ -13,7 +13,7 @@ class _StudySwapChatScreenState extends State<StudySwapChatScreen> {
   final TextEditingController _controller = TextEditingController();
 
   static const String GEMINI_API_KEY =
-      'AIzaSyAALumHL7C_dFIH1_Ijc2PCDv5s3L6gFKU';
+      'APIHERE';
 
   final List<Map<String, String>> messages = [
     {
