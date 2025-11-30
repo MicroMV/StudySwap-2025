@@ -7,6 +7,18 @@ class StudySwapChatScreen extends StatefulWidget {
 
 class _StudySwapChatScreenState extends State<StudySwapChatScreen> {
   final TextEditingController _controller = TextEditingController();
+
+  static const String GEMINI_API_KEY =
+      'AIzaSyAALumHL7C_dFIH1_Ijc2PCDv5s3L6gFKU';
+
+  final List<Map<String, String>> messages = [
+    {
+      "role": "system",
+      "content":
+          "You are StudySwap's customer support agent. Help users borrow, sell, lend, buy, or swap school items. Always give clear, realistic, platform-specific advice.",
+    },
+  ];
+
   final List<Map<String, String>> chatDisplay = [];
   bool _isLoading = false;
 
